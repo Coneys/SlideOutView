@@ -1,0 +1,16 @@
+<resources>
+    <declare-styleable name="SlideOutView">
+        <attr name="anchor" format="float"/>
+        <attr name="initialState" format="enum">
+            <enum name="hidden" value="0"/>
+            <enum name="anchored" value="1"/>
+            <enum name="expanded" value="2"/>
+        </attr>
+        <attr name="slideFrom" format="enum">
+            <enum name="bottom" value="80"/>
+            <enum name="top" value="48"/>
+            <enum name="left" value="3"/>
+            <enum name="right" value="5"/>
+        </attr>
+    </declare-styleable>
+</resources>
