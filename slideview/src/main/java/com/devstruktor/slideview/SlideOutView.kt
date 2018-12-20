@@ -1,6 +1,8 @@
 package com.devstruktor.slideview
 
 import android.content.Context
+import android.os.Bundle
+import android.os.Parcelable
 import android.support.constraint.ConstraintLayout
 import android.util.AttributeSet
 import android.view.Gravity
@@ -110,6 +112,30 @@ class SlideOutView(context: Context, attrs: AttributeSet?) : ConstraintLayout(co
         post {
             slideOutViewGravity.applyState(slideOutViewState, this, anchor)
         }
+    }
+
+
+    override fun onSaveInstanceState(): Parcelable? {
+
+        val bundle = Bundle()
+        bundle.putInt("gravity", slideGravity.intRepresentation)
+        bundle.putSerializable("state", currentState)
+        bundle.putFloat("anchor", anchor)
+        bundle.putParcelable("superState", super.onSaveInstanceState())
+        return bundle
+    }
+
+    override fun onRestoreInstanceState(state: Parcelable?) {
+
+        if (state is Bundle) {
+            slideGravity = SlideOutViewGravity.fromInt(state.getInt("gravity"))
+            currentState = state.getSerializable("state") as SlideOutViewState
+            anchor = state.getFloat("anchor")
+            applyCurrentStateToView(slideGravity,currentState,anchor)
+            val superState = state.getParcelable<Parcelable>("superState")
+            super.onRestoreInstanceState(superState)
+        }
+
     }
 
 

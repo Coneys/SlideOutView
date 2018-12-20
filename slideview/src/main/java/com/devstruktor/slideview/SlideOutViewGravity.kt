@@ -5,6 +5,8 @@ import android.view.ViewPropertyAnimator
 
 sealed class SlideOutViewGravity {
 
+    abstract val intRepresentation: Int
+
     abstract fun prepareExpandAnimation(animator: ViewPropertyAnimator)
             : ViewPropertyAnimator
 
@@ -28,6 +30,8 @@ sealed class SlideOutViewGravity {
     object BOTTOM : SlideOutViewGravity() {
 
         override val horizontal: Boolean = false
+
+        override val intRepresentation: Int = Gravity.BOTTOM
 
         override fun prepareHideAnimation(
             animator: ViewPropertyAnimator, width: Int, height: Int, anchor: Float
@@ -62,6 +66,9 @@ sealed class SlideOutViewGravity {
 
         override val horizontal: Boolean = false
 
+        override val intRepresentation: Int = Gravity.TOP
+
+
         override fun prepareHideAnimation(
             animator: ViewPropertyAnimator, width: Int, height: Int, anchor: Float
         ) = animator.apply {
@@ -93,6 +100,9 @@ sealed class SlideOutViewGravity {
 
     object LEFT : SlideOutViewGravity() {
 
+
+        override val intRepresentation: Int = Gravity.LEFT
+
         override val horizontal: Boolean = true
 
         override fun prepareHideAnimation(
@@ -123,6 +133,8 @@ sealed class SlideOutViewGravity {
     }
 
     object RIGHT : SlideOutViewGravity() {
+
+        override val intRepresentation: Int = Gravity.RIGHT
 
         override val horizontal: Boolean = true
 
