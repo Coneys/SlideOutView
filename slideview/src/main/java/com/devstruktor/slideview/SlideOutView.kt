@@ -4,11 +4,22 @@ import android.content.Context
 import android.os.Bundle
 import android.os.Parcelable
 import android.support.constraint.ConstraintLayout
+import android.support.v4.view.animation.FastOutSlowInInterpolator
 import android.util.AttributeSet
 import android.view.Gravity
+import android.view.animation.Interpolator
+import com.devstruktor.slideview.listener.ListenerHolder
+import com.devstruktor.slideview.listener.StateChangeListener
+import java.util.*
 
 
 class SlideOutView(context: Context, attrs: AttributeSet?) : ConstraintLayout(context, attrs) {
+
+    private var stateListenerHolder = ListenerHolder<StateChangeListener>()
+    private var stateAnimationListenerHolder = ListenerHolder<StateChangeListener>()
+
+    var animationDuration = 700
+    var interpolator: Interpolator = FastOutSlowInInterpolator()
 
     var anchor: Float = 0f
         private set(value) {
@@ -20,6 +31,7 @@ class SlideOutView(context: Context, attrs: AttributeSet?) : ConstraintLayout(co
     private val initialState: SlideOutViewState
     var currentState: SlideOutViewState
         private set
+    private var oldState: SlideOutViewState
     var slideGravity: SlideOutViewGravity
         private set
 
@@ -34,9 +46,11 @@ class SlideOutView(context: Context, attrs: AttributeSet?) : ConstraintLayout(co
                 val stateNumber = getInteger(R.styleable.SlideOutView_initialState, 0)
                 initialState = SlideOutViewState.fromInt(stateNumber)
                 currentState = initialState
+                oldState = initialState
                 val slideGravityNumber = getInteger(R.styleable.SlideOutView_slideFrom, Gravity.BOTTOM)
                 slideGravity = SlideOutViewGravity.fromInt(slideGravityNumber)
                 anchor = getFloat(R.styleable.SlideOutView_anchor, 0f)
+                animationDuration = getInt(R.styleable.SlideOutView_animDuration, 700)
 
             } finally {
                 recycle()
@@ -62,16 +76,39 @@ class SlideOutView(context: Context, attrs: AttributeSet?) : ConstraintLayout(co
     }
 
     fun setNewState(state: SlideOutViewState) {
+        oldState = currentState
         currentState = state
-        applyCurrentStateToViewWithAnimation(slideGravity, currentState, anchor)
+        stateListenerHolder.listeners.values.forEach {
+            it.invoke(oldState, currentState)
+        }
+        applyCurrentStateToViewWithAnimation(
+            slideGravity, currentState,
+            anchor
+        )
     }
 
-    private fun hide(gravity: SlideOutViewGravity, anchor: Float = 0f) {
-        gravity.prepareHideAnimation(animate(), width, height, anchor).start()
+    private fun hide(gravity: SlideOutViewGravity, state: SlideOutViewState, anchor: Float = 0f) {
+        gravity.prepareHideAnimation(animate(), width, height, anchor)
+            .setDuration(animationDuration.toLong())
+            .setInterpolator(interpolator)
+            .withEndAction {
+                stateAnimationListenerHolder.listeners.values.forEach {
+                    it.invoke(oldState, state)
+                }
+            }
+            .start()
     }
 
-    private fun show(gravity: SlideOutViewGravity) {
-        gravity.prepareExpandAnimation(animate()).start()
+    private fun show(gravity: SlideOutViewGravity, state: SlideOutViewState) {
+        gravity.prepareExpandAnimation(animate())
+            .setDuration(animationDuration.toLong())
+            .setInterpolator(interpolator)
+            .withEndAction {
+                stateAnimationListenerHolder.listeners.values.forEach {
+                    it.invoke(oldState, state)
+                }
+            }
+            .start()
     }
 
     fun setGravity(gravity: SlideOutViewGravity) {
@@ -82,13 +119,7 @@ class SlideOutView(context: Context, attrs: AttributeSet?) : ConstraintLayout(co
 
     override fun onFinishInflate() {
         super.onFinishInflate()
-        if (childCount != 1) throw IllegalStateException(
-            "SlideOutView has to have 1 children" +
-                    "Currently has $childCount"
-        )
-
         applyCurrentStateToView(slideGravity, initialState, anchor)
-
     }
 
     private fun applyCurrentStateToViewWithAnimation(
@@ -97,9 +128,9 @@ class SlideOutView(context: Context, attrs: AttributeSet?) : ConstraintLayout(co
         anchor: Float
     ) {
         when (slideOutViewState) {
-            SlideOutViewState.HIDDEN -> hide(slideOutViewGravity)
-            SlideOutViewState.ANCHORED -> hide(slideOutViewGravity, anchor)
-            SlideOutViewState.EXPANDED -> show(slideOutViewGravity)
+            SlideOutViewState.HIDDEN -> hide(slideOutViewGravity, slideOutViewState)
+            SlideOutViewState.ANCHORED -> hide(slideOutViewGravity, slideOutViewState, anchor)
+            SlideOutViewState.EXPANDED -> show(slideOutViewGravity, slideOutViewState)
         }
     }
 
@@ -131,11 +162,27 @@ class SlideOutView(context: Context, attrs: AttributeSet?) : ConstraintLayout(co
             slideGravity = SlideOutViewGravity.fromInt(state.getInt("gravity"))
             currentState = state.getSerializable("state") as SlideOutViewState
             anchor = state.getFloat("anchor")
-            applyCurrentStateToView(slideGravity,currentState,anchor)
+            applyCurrentStateToView(slideGravity, currentState, anchor)
             val superState = state.getParcelable<Parcelable>("superState")
             super.onRestoreInstanceState(superState)
         }
 
+    }
+
+    fun addOnStateChangeListener(tag: String = UUID.randomUUID().toString(),listener: StateChangeListener) {
+        stateListenerHolder.addListener(listener, tag)
+    }
+
+    fun removeOnStateChangeListener(tag: String) {
+        stateListenerHolder.removeListener(tag)
+    }
+
+    fun addOnStateAnimationFinishedListener(tag: String = UUID.randomUUID().toString(),listener: StateChangeListener) {
+        stateAnimationListenerHolder.addListener(listener, tag)
+    }
+
+    fun removeOnStateAnimationFinishedListener(tag: String) {
+        stateAnimationListenerHolder.removeListener(tag)
     }
 
 

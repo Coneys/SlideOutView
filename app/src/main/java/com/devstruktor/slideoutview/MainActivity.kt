@@ -46,5 +46,12 @@ class MainActivity : AppCompatActivity() {
         hidden_state.setOnClickListener {
             sample_slide_out_view.setNewState(SlideOutViewState.HIDDEN)
         }
+
+        sample_slide_out_view.addOnStateChangeListener { oldState: SlideOutViewState, newState: SlideOutViewState ->
+            println("Changed from $oldState to $newState")
+        }
+        sample_slide_out_view.addOnStateAnimationFinishedListener { oldState: SlideOutViewState, newState: SlideOutViewState ->
+            println("Animation finished from $oldState to $newState")
+        }
     }
 }
